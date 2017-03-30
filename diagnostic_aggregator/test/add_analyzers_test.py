@@ -41,6 +41,7 @@ import threading
 from bondpy import bondpy
 from diagnostic_msgs.srv import AddDiagnostics
 from diagnostic_msgs.msg import DiagnosticArray, DiagnosticStatus
+import concurrent.futures
 
 PKG = 'diagnostic_aggregator'
 
@@ -73,9 +74,6 @@ class TestAddAnalyzer(unittest.TestCase):
                 self.agg_msgs[stat.name] = stat
 
     def add_analyzer(self):
-        target = open("../tititoto", 'w')
-        target.write("HI\n")
-        target.close()
         """Start a bond to the aggregator
         """
         self.bond = bondpy.Bond("/diagnostics_agg/bond", rospy.resolve_name(rospy.get_name()))
@@ -100,19 +98,19 @@ class TestAddAnalyzer(unittest.TestCase):
             DiagnosticStatus(name='primary', message='hello-primary'),
             DiagnosticStatus(name='secondary', message='hello-secondary')
         ]
-        self.pub.publish(arr)
+        #self.pub.publish(arr)
         #self.wait_for_agg()
         # the new aggregator data should contain the extra paths. At this point
         # the paths are probably still in the 'Other' group because the bond
         # hasn't been fully formed
-        with self._mutex:
-            agg_paths = [msg.name for name, msg in self.agg_msgs.iteritems()]
+        #with self._mutex:
+        #    agg_paths = [msg.name for name, msg in self.agg_msgs.iteritems()]
        #     self.assert_(all(expected in agg_paths for expected in self.expected))
 
-        rospy.sleep(rospy.Duration(1))  # wait a bit for the new items to move to the right group
+        #rospy.sleep(rospy.Duration(1))  # wait a bit for the new items to move to the right group
         arr.header.stamp = rospy.get_rostime()
         self.pub.publish(arr)  # publish again to get the correct groups to show OK
-        self.wait_for_agg()
+        #self.wait_for_agg()
 
         #for name, msg in self.agg_msgs.iteritems():
         #    if name in self.expected:  # should have just received messages on the analyzer
@@ -140,7 +138,11 @@ class TestAddAnalyzer(unittest.TestCase):
                 'Add Analyzers: add timed out while waiting for diagnostics_agg service, or ROS shutdown [{0}]'.format(
                     self.name))
 
-        self.wait_for_agg()
+        #self.wait_for_agg()
+
+    def loop_add_remove(self,id):
+        while (True):
+            self.add_remove(id)
 
     def test_add_agg(self):
         self.wait_for_agg()
@@ -151,13 +153,31 @@ class TestAddAnalyzer(unittest.TestCase):
             self.assert_(not any(expected in agg_paths for expected in self.expected))
             
         # add the new groups
-        while(True):
-            self.add_remove()
+        #self.add_remove(1)
+
+
+
+        #for i in range(0,2):
+        self.add_remove()
+        # arr = DiagnosticArray()
+        # arr.header.stamp = rospy.get_rostime()
+        # arr.status = [
+        #     DiagnosticStatus(name='primary', message='hello-primary'),
+        #     DiagnosticStatus(name='secondary', message='hello-secondary')
+        # ]
+        # self.pub.publish(arr)
+        # for i in range(0,nb_threads):
+        #     tid = th_pool.submit(self.add_remove,i)
+        #     thread_array.append(tid)
+
+        # for j in range(0,nb_threads):
+        #     thread_array[j].result()
+
 
         # the aggregator data should no longer contain the paths once the bond is shut down
-        with self._mutex:
-            agg_paths = [msg.name for name, msg in self.agg_msgs.iteritems()]
-            self.assert_(not any(expected in agg_paths for expected in self.expected))
+        # with self._mutex:
+        #     agg_paths = [msg.name for name, msg in self.agg_msgs.iteritems()]
+        #     self.assert_(not any(expected in agg_paths for expected in self.expected))
         
 if __name__ == '__main__':
     print 'SYS ARGS:', sys.argv
