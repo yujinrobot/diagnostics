@@ -46,6 +46,7 @@ PKG = 'diagnostic_aggregator'
 
 class TestAddAnalyzer(unittest.TestCase):
     def __init__(self, *args):
+        self.add_diagnostics = None
         super(TestAddAnalyzer, self).__init__(*args)
         rospy.init_node('test_add_analyzer')
         self.namespace = rospy.get_name()
@@ -74,9 +75,9 @@ class TestAddAnalyzer(unittest.TestCase):
         self.bond = bondpy.Bond("/diagnostics_agg/bond", rospy.resolve_name(rospy.get_name()))
         self.bond.start()
         rospy.wait_for_service('/diagnostics_agg/add_diagnostics', timeout=10)
-        add_diagnostics = rospy.ServiceProxy('/diagnostics_agg/add_diagnostics', AddDiagnostics)
+        self.add_diagnostics = rospy.ServiceProxy('/diagnostics_agg/add_diagnostics', AddDiagnostics)
         print(self.namespace)
-        resp = add_diagnostics(load_namespace=self.namespace)
+        resp = self.add_diagnostics(load_namespace=self.namespace)
         self.assert_(resp.success, 'Service call was unsuccessful: {0}'.format(resp.message))
 
     def wait_for_agg(self):
@@ -123,7 +124,7 @@ class TestAddAnalyzer(unittest.TestCase):
             self.assert_(all(expected in agg_paths for expected in self.expected))
                 
 
-        self.bond.shutdown()
+        self.add_diagnostics(load_namespace=self.namespace)
         self.wait_for_agg()
         # the aggregator data should no longer contain the paths once the bond is shut down
         with self._mutex:
